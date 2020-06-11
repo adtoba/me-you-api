@@ -26,8 +26,8 @@ exports.login = (req, res, next) => {
 
                 if(result) {
                     const token = jwt.sign({
-                        email = user[0].email,
-                        userId = user[0]._id
+                        email: user[0].email,
+                        userId: user[0]._id
                     }, process.env.JWT_KEY, {expiresIn: '1h'}
 
                     );
@@ -47,6 +47,54 @@ exports.login = (req, res, next) => {
             res.status(500).json({
                 error: error
             });
+        });
+}
+
+exports.register = (req, res, next) => {
+    const email = req.body.email;
+    const password = req.body.password;
+    const userName = req.body.username;
+
+    User.find({email: email}).exec()
+        .then(user => {
+            if(user.length >= 1) {
+                return res.status(409).json({
+                    message: 'User exists already'
+                });
+            } else {
+                bcrypt.hash(password, 10, (err, hash) => {
+                    if(err) {
+                        return res.status(500).json({
+                            error: err
+                        });
+                    } else {
+                        const user = new User({
+                            _id: new mongoose.Types.ObjectId(),
+                            email: email,
+                            password: hash,
+                            username: userName
+                        });
+
+                        user.save().then(result => {
+                            console.log(result);
+                            res.status(201).json({
+                                message: 'User created successfully',
+                                user: {
+                                    id: result._id,
+                                    email: result.email,
+                                    username: result.username
+                                }
+                            });
+                        }).catch(error => {
+                            res.status(500).json({
+                                error: error
+                            });
+                        })
+                    }
+                });
+            }
+        }).catch(error => {
+
         });
 }
 
